@@ -11,56 +11,52 @@ from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster
 from cassandra.query import SimpleStatement
 
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-
 # setup flask
 app = Flask(__name__)
 app.config.update(
-    DATABASE_URI = 'sqlite:///flask-openid.db',
     SECRET_KEY = 'development key',
-    DEBUG = True
+    DEBUG = True,
+    
+    # Database configuration
+    DATABASE_URI = 'localhost',
+    KEYSPACE_NAME = 'losatlantis'
 )
+
+# Right now we are not using a Model mapping tool, such as sqlalchemy or cqlengine
+class Users(object):
+    
+    _name = ''
+    _email = ''
+    _password = ''
+    _openid = ''
+    
+    def __init__(self, name, email, openid, password=''):
+        self._name = name
+        self._email = email
+        self.password = password
+        self._openid = openid
 
 # setup flask-openid
 oid = OpenID(app, safe_roots=[], extension_responses=[pape.Response])
 
-# TODO: switch to Cassandra instead of sqlite
-# setup sqlalchemy
-engine = create_engine(app.config['DATABASE_URI'])
-db_session = scoped_session(sessionmaker(autocommit=True,
-                                         autoflush=True,
-                                         bind=engine))
-Base = declarative_base()
-Base.query = db_session.query_property()
+cluster = Cluster(
+    contact_points = [app.config['DATABASE_URI']],
+)
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
-
-class User(Base):
-    __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(60))
-    email = Column(String(200))
-    openid = Column(String(200))
-
-    def __init__(self, name, email, openid):
-        self.name = name
-        self.email = email
-        self.openid = openid
-
+db_session = cluster.connect(app.config['KEYSPACE_NAME'])
 
 @app.before_request
 def before_request():
     g.user = None
-    if 'openid' in session:
-        g.user = User.query.filter_by(openid=session['openid']).first()
-
-
+    if 'email' in session:
+        result = db_session.execute('select * from users where email = \'%s\'' % session['email'])
+        # Safe to make the assumption that query always has results?
+        if result is not None and len(result) > 0:
+            g.user = Users(result[0].user_name, result[0].email, result[0].openid)
+        
 @app.after_request
 def after_request(response):
-    db_session.remove()
+    # Do we call db_session's disconnect
     return response
 
 
@@ -83,8 +79,11 @@ def login():
     if request.method == 'POST':
         openid = request.form.get('openid_identifier')
         use_oidc = request.form.get('use_oidc_identifier')
-        print(openid)
-        print(use_oidc)
+        
+        if __debug__:
+            print('Received openid: ' + openid)
+            print('Received use_oidc: ' + use_oidc)
+            
         if openid:
             pape_req = pape.Request([])
             if use_oidc != None and use_oidc != "1":
@@ -104,13 +103,17 @@ def login():
 @oid.after_login
 def create_or_login(resp):
     session['openid'] = resp.identity_url
+    # Note: is there an OpenID account that is not identifiable by email?
+    session['email'] = resp.email
+    
     if 'pape' in resp.extensions:
         pape_resp = resp.extensions['pape']
         session['auth_time'] = pape_resp.auth_time
-    user = User.query.filter_by(openid=resp.identity_url).first()
-    if user is not None:
+        
+    result = db_session.execute('select * from users where email = \'%s\'' % resp.email)
+    if result is not None and len(result) > 0:
         flash(u'Successfully signed in')
-        g.user = user
+        g.user = Users(result[0].user_name, result[0].email, result[0].openid)
         return redirect(oid.get_next_url())
     return redirect(url_for('create_profile', next=oid.get_next_url(),
                             name=resp.fullname or resp.nickname,
@@ -131,45 +134,51 @@ def create_profile():
             flash(u'Error: you have to enter a valid email address')
         else:
             flash(u'Profile successfully created')
-            db_session.add(User(name, email, session['openid']))
-            db_session.commit()
+            db_session.execute('insert into users (user_name, email) values (\'%s\', \'%s\')' % (name, email))
+            # It's not necessary that we store openID now, but we do so anyway.
+            db_session.execute('update users set openid = openid + [\'%s\'] where email = \'%s\'' % (session['openid'], email))
             return redirect(oid.get_next_url())
     return render_template('create_profile.html', next_url=oid.get_next_url())
 
+# Update the profile; we do not allow people to update their email address?
 @app.route('/profile', methods=['GET', 'POST'])
 def edit_profile():
-    """Updates a profile"""
     if g.user is None:
         abort(401)
-    form = dict(name=g.user.name, email=g.user.email)
+    form = dict(name=g.user._name, email=g.user._email)
     if request.method == 'POST':
         if 'delete' in request.form:
-            db_session.delete(g.user)
-            db_session.commit()
+            # Note: Two entries with the same email address: maybe email should be primary key?
+            db_session.execute('delete from users where email=\'%s\'' % g.user._email)
+            
             session['openid'] = None
+            session['email'] = None
+            
             flash(u'Profile deleted')
             return redirect(url_for('index'))
         form['name'] = request.form['name']
         form['email'] = request.form['email']
         if not form['name']:
             flash(u'Error: you have to provide a name')
-        elif '@' not in form['email']:
-            flash(u'Error: you have to enter a valid email address')
         else:
             flash(u'Profile successfully created')
-            g.user.name = form['name']
-            g.user.email = form['email']
-            db_session.commit()
+            # Note: Two entries with the same email address: maybe email should be primary key?
+            db_session.execute('update users set user_name=\'%s\' where email=\'%s\'' % (form['name'], g.user._email))
+            g.user._name = form['name']
+            g.user._email = form['email']
             return redirect(url_for('edit_profile'))
     return render_template('edit_profile.html', form=form)
 
 @app.route('/logout')
 def logout():
+    print("*** logout called ***")
+    print(oid.get_next_url())
     session.pop('openid', None)
+    session.pop('email', None)
     flash(u'You have been signed out')
+    # Note: logout will want a constant redirect to something like index.html, which is not implemented
     return redirect(oid.get_next_url())
 
 
 if __name__ == '__main__':
-    init_db()
     app.run()

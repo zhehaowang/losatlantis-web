@@ -1,0 +1,7 @@
+*.db
+debug/
+*.pyc
+*.pyo
+images*/
+*.cql
+.DS_Store

@@ -53,6 +53,14 @@
       <input id="registration_password_confirm" name="registration_password_confirm" type="password" /><br>
       Username:<br>
       <input id="registration_user_name" name="registration_user_name" type="text" /><br>
+      <dt>Type:
+      <dd>
+      <!-- This static mapping is annoying...Left here for simplicity -->
+      <select name="registration_type">
+        <option value="0">Watcher</option>
+        <option value="1">Tourist</option>
+        <option value="2">Crew</option>
+      </select>
       <input id="registration_submit" type="submit" value="Register"/>
     </div>
   </form>

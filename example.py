@@ -144,6 +144,7 @@ def register():
     passwd = request.form.get('registration_password')
     passwd_confirm = request.form.get('registration_password_confirm')
     user_name = request.form.get('registration_user_name')
+    type = int(request.form.get('registration_type'))
     
     # Note: This should probably be handled in frontend, at some point
     if email is None or passwd is None or email == '' or passwd == '':
@@ -165,9 +166,9 @@ def register():
         if (not hasattr(results[0], 'password')) or results[0].password is None or results[0].password == '':
             flash(u'Profile successfully created, you can now login')
             if (user_name == ''):
-                db_session.execute('update users set password = \'%s\' where email = \'%s\'' % (passwd, email))
+                db_session.execute('update users set password = \'%s\', type = %d where email = \'%s\'' % (passwd, type, email))
             else:
-                db_session.execute('update users set password = \'%s\', user_name = \'%s\' where email = \'%s\'' % (passwd, user_name, email))
+                db_session.execute('update users set password = \'%s\', user_name = \'%s\', type = %d where email = \'%s\'' % (passwd, user_name, type, email))
             return redirect(url_for('login'))
         # This account already exists, we can't register it again
         else:
@@ -217,13 +218,15 @@ def create_profile():
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
+        type = int(request.form['type'])
+        
         if not name:
             flash(u'Error: you have to provide a name')
         elif '@' not in email:
             flash(u'Error: you have to enter a valid email address')
         else:
             flash(u'Profile successfully created')
-            db_session.execute('insert into users (user_name, email) values (\'%s\', \'%s\')' % (name, email))
+            db_session.execute('insert into users (user_name, email, type) values (\'%s\', \'%s\', %d)' % (name, email, type))
             # It's not necessary that we store openID now, but we do so anyway.
             db_session.execute('update users set openid = openid + [\'%s\'] where email = \'%s\'' % (session['openid'], email))
             return redirect(oid.get_next_url())
@@ -247,12 +250,13 @@ def edit_profile():
             return redirect(url_for('index'))
         form['name'] = request.form['name']
         form['email'] = request.form['email']
+        type = int(request.form['type'])
         if not form['name']:
             flash(u'Error: you have to provide a name')
         else:
-            flash(u'Profile successfully created')
+            flash(u'Profile successfully updated')
             # Note: Two entries with the same email address: maybe email should be primary key?
-            db_session.execute('update users set user_name=\'%s\' where email=\'%s\'' % (form['name'], g.user._email))
+            db_session.execute('update users set user_name = \'%s\', type = %d where email = \'%s\'' % (form['name'], type, g.user._email))
             g.user._name = form['name']
             g.user._email = form['email']
             return redirect(url_for('edit_profile'))

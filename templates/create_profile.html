@@ -13,10 +13,11 @@
       <dd><input type=text name=email size=30 value="{{ request.values.email }}">
       <dt>Type:
       <dd>
-      <select>
-        <option value="watcher">Watcher</option>
-        <option value="tourist">Tourist</option>
-        <option value="crew">Crew</option>
+      <!-- This static mapping is annoying...Left here for simplicity -->
+      <select name="type">
+        <option value="0">Watcher</option>
+        <option value="1">Tourist</option>
+        <option value="2">Crew</option>
       </select>
     </dl>
     <p>

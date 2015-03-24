@@ -2,12 +2,22 @@
 {% block title %}Edit Profile{% endblock %}
 {% block body %}
   <h2>Edit Profile</h2>
+  
+  <!-- Edit profile could use the same template with registration -->
   <form action="" method=post>
     <dl>
       <dt>Name:
       <dd><input type=text name=name size=30 value="{{ form.name }}">
       <dt>E-Mail
       <dd><input type=text name=email size=30 value="{{ form.email }}" readonly>
+      <dt>Type:
+      <dd>
+      <!-- This static mapping is annoying...Left here for simplicity -->
+      <select name="type">
+        <option value="0">Watcher</option>
+        <option value="1">Tourist</option>
+        <option value="2">Crew</option>
+      </select>
     </dl>
     <p>
       <input type=submit value="Update profile">

@@ -11,6 +11,8 @@ from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster
 from cassandra.query import SimpleStatement
 
+from email.utils import parseaddr
+
 # setup flask
 app = Flask(__name__)
 app.config.update(
@@ -49,10 +51,10 @@ db_session = cluster.connect(app.config['KEYSPACE_NAME'])
 def before_request():
     g.user = None
     if 'email' in session:
-        result = db_session.execute('select * from users where email = \'%s\'' % session['email'])
+        results = db_session.execute('select * from users where email = \'%s\'' % session['email'])
         # Safe to make the assumption that query always has results?
-        if result is not None and len(result) > 0:
-            g.user = Users(result[0].user_name, result[0].email, result[0].openid)
+        if results is not None and len(results) > 0:
+            g.user = Users(results[0].user_name, results[0].email, results[0].openid)
         
 @app.after_request
 def after_request(response):
@@ -64,6 +66,13 @@ def after_request(response):
 def index():
     return render_template('index.html')
 
+@app.route('/login')
+def login():
+    if g.user is not None:
+        return redirect(oid.get_next_url())
+    return render_template('login.html', next=oid.get_next_url(),
+                           error=oid.fetch_error())
+
 # Does the login via OpenID.  Has to call into "oid.try_login"
 # to start the OpenID machinery.
 # if we are already logged in, go back to were we came from
@@ -71,9 +80,9 @@ def index():
 # For a list of urls of openid providers: 
 # http://stackoverflow.com/questions/1116743/where-can-i-find-a-list-of-openid-provider-urls
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login_oid', methods=['GET', 'POST'])
 @oid.loginhandler
-def login():
+def login_oid():
     if g.user is not None:
         return redirect(oid.get_next_url())
     if request.method == 'POST':
@@ -96,10 +105,86 @@ def login():
     return render_template('login.html', next=oid.get_next_url(),
                            error=oid.fetch_error())
 
+@app.route('/login_own', methods=['POST'])
+def login_own():
+    email = request.form.get('signin_email')
+    passwd = request.form.get('signin_password')
+    
+    # Note: This should probably be handled in frontend, at some point
+    if email is None or passwd is None or email == '' or passwd == '':
+        flash(u'Empty email or password')
+        return redirect(url_for('login'))
+    
+    results = db_session.execute('select email, password from users where email = \'%s\'' % email)
+    if results is not None and len(results) > 0:
+        # Note: for debug passwd is stored as plain text, will change later;
+        if (results[0].password is not None and results[0].password != '' and passwd == results[0].password):
+            flash(u'Successfully signed in')
+            username = ''
+            if hasattr(results[0], 'user_name'):
+                username = results[0].user_name
+            openids = []
+            if hasattr(results[0], 'openid'):
+                openids = results[0].openid
+            g.user = Users(username, email, openids)
+            session['email'] = email
+            # Figuring out if some sort of 'next' should be used for ordinary sign-ins
+            return redirect(url_for('index'))
+        else:
+            # A user cannot sign in with ordinary methods, if he only has OpenID signin records
+            flash(u'User passwd wrong or not set')
+            return redirect(url_for('login'))
+    else: 
+        flash(u'User record does not exist')
+        return redirect(url_for('login'))
+        
+@app.route('/register', methods=['POST'])
+def register():
+    email = request.form.get('registration_email')
+    passwd = request.form.get('registration_password')
+    passwd_confirm = request.form.get('registration_password_confirm')
+    user_name = request.form.get('registration_user_name')
+    
+    # Note: This should probably be handled in frontend, at some point
+    if email is None or passwd is None or email == '' or passwd == '':
+        flash(u'Empty email or password')
+        return redirect(url_for('login'))
+        
+    if '@' not in parseaddr(email)[1]:
+        flash(u'Illegal email address')
+        return redirect(url_for('login'))
+        
+    if (passwd != passwd_confirm):
+        flash(u'Password mismatch')
+        return redirect(url_for('login'))
+        
+    results = db_session.execute('select * from users where email = \'%s\'' % email)
+    if (not results is None) and len(results) > 0:
+        # This email address only had OpenID login records, we update his records and set his password
+        # Right now for debug, this process does not require email authentication, same for other registration related things.
+        if (not hasattr(results[0], 'password')) or results[0].password is None or results[0].password == '':
+            flash(u'Profile successfully created, you can now login')
+            if (user_name == ''):
+                db_session.execute('update users set password = \'%s\' where email = \'%s\'' % (passwd, email))
+            else:
+                db_session.execute('update users set password = \'%s\', user_name = \'%s\' where email = \'%s\'' % (passwd, user_name, email))
+            return redirect(url_for('login'))
+        # This account already exists, we can't register it again
+        else:
+            flash(u'Profile already exists')
+            return redirect(url_for('login'))
+    else:
+        # This email address does not have related records, we create a new profile
+        flash(u'Profile successfully created, you can now login')
+        db_session.execute('insert into users (user_name, email, password) values (\'%s\', \'%s\', \'%s\')' % (user_name, email, passwd))
+        return redirect(url_for('login'))
+    return redirect(url_for('login'))
+
 # This is called when login with OpenID succeeded and it's not
 # necessary to figure out if this is the users's first login or not.
 # This function has to redirect otherwise the user will be presented
 # with a terrible URL which we certainly don't want.
+# This is only used by login with OpenID
 @oid.after_login
 def create_or_login(resp):
     session['openid'] = resp.identity_url
@@ -110,10 +195,13 @@ def create_or_login(resp):
         pape_resp = resp.extensions['pape']
         session['auth_time'] = pape_resp.auth_time
         
-    result = db_session.execute('select * from users where email = \'%s\'' % resp.email)
-    if result is not None and len(result) > 0:
+    results = db_session.execute('select * from users where email = \'%s\'' % resp.email)
+    if results is not None and len(results) > 0:
         flash(u'Successfully signed in')
-        g.user = Users(result[0].user_name, result[0].email, result[0].openid)
+        g.user = Users(results[0].user_name, results[0].email, session['openid'])
+        # It's not necessary that we store openID now, but we do so anyway.
+        if (results[0].openid is not None and session['openid'] not in results[0].openid):
+            db_session.execute('update users set openid = openid + [\'%s\'] where email = \'%s\'' % (session['openid'], resp.email))
         return redirect(oid.get_next_url())
     return redirect(url_for('create_profile', next=oid.get_next_url(),
                             name=resp.fullname or resp.nickname,
@@ -121,6 +209,7 @@ def create_or_login(resp):
 
 # If this is the user's first login, the create_or_login function
 # will redirect here so that the user can set up his profile.
+# Create profile is only usde by OpenID login now.
 @app.route('/create-profile', methods=['GET', 'POST'])
 def create_profile():
     if g.user is not None or 'openid' not in session:
@@ -176,8 +265,8 @@ def logout():
     session.pop('openid', None)
     session.pop('email', None)
     flash(u'You have been signed out')
-    # Note: logout will want a constant redirect to something like index.html, which is not implemented
-    return redirect(oid.get_next_url())
+    # Note: logout will want a constant redirect to something like index.html, which may not be ideal in certain cases?
+    return redirect(url_for('index'))
 
 
 if __name__ == '__main__':

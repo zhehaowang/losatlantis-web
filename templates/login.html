@@ -12,15 +12,10 @@
     });
   </script>
 
-  <style type="text/css">
-    body {
-      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    }
-  </style>
-
-  <h2>Sign in</h2>
-  <form id="openid_form" action="" method=post>
-    {% if error %}<p class=error><strong>Error:</strong> {{ error }}</p>{% endif %}
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }}</p>{% endif %}
+    
+  <h2>Sign in with OpenID</h2>
+  <form id="openid_form" action="login_oid" method=post>
     <p>
       Select an OpenID provider
       <div id="openid_choice">
@@ -30,9 +25,35 @@
       <div id="openid_input_area">
 	    <input id="openid_identifier" name="openid_identifier" type="text" value="http://" />
 	    <input id="use_oidc_identifier" name="use_oidc_identifier" type="text" value="0"/>
-	  	<input id="openid_submit" type="submit" value="Sign-In"/>
+	  	<input id="openid_submit" type="submit" value="Sign-In with OpenID"/>
 	  </div>
 	  <input type=hidden name="next" value="{{ next }}"/>
     </p>
+  </form>
+  
+  <h2>Sign in</h2>
+  <form id="signin_form" action="login_own" method=post>
+    <div id="signin_input_area">
+      Email:<br>
+      <input id="signin_email" name="signin_email" type="text" /><br>
+      Password:<br>
+      <input id="signin_password" name="signin_password" type="password" /><br>
+      <input id="signin_submit" type="submit" value="Sign-In"/>
+    </div>
+  </form>
+  
+  <h2>Register</h2>
+  <form id="registration_form" action="register" method="post">
+    <div id="registration_input_area">
+      Email:<br>
+      <input id="registration_email" name="registration_email" type="text" /><br>
+      Password:<br>
+      <input id="registration_password" name="registration_password" type="password" /><br>
+      Confirm password:<br>
+      <input id="registration_password_confirm" name="registration_password_confirm" type="password" /><br>
+      Username:<br>
+      <input id="registration_user_name" name="registration_user_name" type="text" /><br>
+      <input id="registration_submit" type="submit" value="Register"/>
+    </div>
   </form>
 {% endblock %}

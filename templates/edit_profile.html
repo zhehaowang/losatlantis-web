@@ -1,6 +1,13 @@
 {% extends "layout.html" %}
 {% block title %}Edit Profile{% endblock %}
 {% block body %}
+  <script type="text/javascript">
+    window.onload = function () {
+      var element = document.getElementById('type');
+      element.value = {{ form.type }};
+    }
+  </script>
+
   <h2>Edit Profile</h2>
   
   <!-- Edit profile could use the same template with registration -->
@@ -13,7 +20,7 @@
       <dt>Type:
       <dd>
       <!-- This static mapping is annoying...Left here for simplicity -->
-      <select name="type">
+      <select name="type" id="type"">
         <option value="0">Watcher</option>
         <option value="1">Tourist</option>
         <option value="2">Crew</option>

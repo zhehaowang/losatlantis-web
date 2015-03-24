@@ -30,13 +30,37 @@ class Users(object):
     _name = ''
     _email = ''
     _password = ''
-    _openid = ''
+    _openid = []
+    _type = -1
     
-    def __init__(self, name, email, openid, password=''):
+    def update(self, query):
+        username = ''
+        if hasattr(query, 'user_name') and (not query.user_name is None):
+            username = query.user_name
+        openids = []
+        if hasattr(query, 'openid') and (not query.openid is None):
+            openids = query.openid
+        type = -1
+        if hasattr(query, 'type') and (not query.type is None):
+            type = int(query.type)
+        passwd = ''
+        if hasattr(query, 'password') and (not query.password is None):
+            passwd = query.password
+        
+        self._name = username
+        self._email = query.email
+        self.password = passwd
+        self._openid = openids
+        self._type = type
+
+        return self
+        
+    def __init__(self, name = '', email = '', openid = [], type = -1, password = ''):
         self._name = name
         self._email = email
         self.password = password
         self._openid = openid
+        self._type = type
 
 # setup flask-openid
 oid = OpenID(app, safe_roots=[], extension_responses=[pape.Response])
@@ -52,9 +76,9 @@ def before_request():
     g.user = None
     if 'email' in session:
         results = db_session.execute('select * from users where email = \'%s\'' % session['email'])
-        # Safe to make the assumption that query always has results?
         if results is not None and len(results) > 0:
-            g.user = Users(results[0].user_name, results[0].email, results[0].openid)
+            g.user = Users()
+            g.user.update(results[0])
         
 @app.after_request
 def after_request(response):
@@ -100,7 +124,7 @@ def login_oid():
                                              ask_for_optional=['fullname'],
                                              extensions=[pape_req])
             else:
-                print('OpenID connect is not supported yet')
+                print('OpenID Connect is not supported yet')
                 
     return render_template('login.html', next=oid.get_next_url(),
                            error=oid.fetch_error())
@@ -115,19 +139,16 @@ def login_own():
         flash(u'Empty email or password')
         return redirect(url_for('login'))
     
-    results = db_session.execute('select email, password from users where email = \'%s\'' % email)
+    results = db_session.execute('select email, password, type from users where email = \'%s\'' % email)
     if results is not None and len(results) > 0:
         # Note: for debug passwd is stored as plain text, will change later;
         if (results[0].password is not None and results[0].password != '' and passwd == results[0].password):
             flash(u'Successfully signed in')
-            username = ''
-            if hasattr(results[0], 'user_name'):
-                username = results[0].user_name
-            openids = []
-            if hasattr(results[0], 'openid'):
-                openids = results[0].openid
-            g.user = Users(username, email, openids)
+            
+            g.user = Users()
+            g.user.update(results[0])
             session['email'] = email
+            
             # Figuring out if some sort of 'next' should be used for ordinary sign-ins
             return redirect(url_for('index'))
         else:
@@ -177,7 +198,7 @@ def register():
     else:
         # This email address does not have related records, we create a new profile
         flash(u'Profile successfully created, you can now login')
-        db_session.execute('insert into users (user_name, email, password) values (\'%s\', \'%s\', \'%s\')' % (user_name, email, passwd))
+        db_session.execute('insert into users (user_name, email, password, type) values (\'%s\', \'%s\', \'%s\', %d)' % (user_name, email, passwd, type))
         return redirect(url_for('login'))
     return redirect(url_for('login'))
 
@@ -199,7 +220,8 @@ def create_or_login(resp):
     results = db_session.execute('select * from users where email = \'%s\'' % resp.email)
     if results is not None and len(results) > 0:
         flash(u'Successfully signed in')
-        g.user = Users(results[0].user_name, results[0].email, session['openid'])
+        g.user = Users()
+        g.user.update(results[0])
         # It's not necessary that we store openID now, but we do so anyway.
         if (results[0].openid is not None and session['openid'] not in results[0].openid):
             db_session.execute('update users set openid = openid + [\'%s\'] where email = \'%s\'' % (session['openid'], resp.email))
@@ -213,7 +235,7 @@ def create_or_login(resp):
 # Create profile is only usde by OpenID login now.
 @app.route('/create-profile', methods=['GET', 'POST'])
 def create_profile():
-    if g.user is not None or 'openid' not in session:
+    if (not g.user is None) or 'openid' not in session:
         return redirect(url_for('index'))
     if request.method == 'POST':
         name = request.form['name']
@@ -237,7 +259,7 @@ def create_profile():
 def edit_profile():
     if g.user is None:
         abort(401)
-    form = dict(name=g.user._name, email=g.user._email)
+    form = dict(name=g.user._name, email=g.user._email, type=g.user._type)
     if request.method == 'POST':
         if 'delete' in request.form:
             # Note: Two entries with the same email address: maybe email should be primary key?
@@ -250,15 +272,16 @@ def edit_profile():
             return redirect(url_for('index'))
         form['name'] = request.form['name']
         form['email'] = request.form['email']
-        type = int(request.form['type'])
+        form['type'] = int(request.form['type'])
         if not form['name']:
-            flash(u'Error: you have to provide a name')
+            flash(u'Please provide a name')
         else:
             flash(u'Profile successfully updated')
             # Note: Two entries with the same email address: maybe email should be primary key?
-            db_session.execute('update users set user_name = \'%s\', type = %d where email = \'%s\'' % (form['name'], type, g.user._email))
+            db_session.execute('update users set user_name = \'%s\', type = %d where email = \'%s\'' % (form['name'], form['type'], g.user._email))
             g.user._name = form['name']
             g.user._email = form['email']
+            g.user._type = form['type']
             return redirect(url_for('edit_profile'))
     return render_template('edit_profile.html', form=form)
 

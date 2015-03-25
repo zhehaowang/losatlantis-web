@@ -6,10 +6,20 @@
 <ul class=navigation>
   <li><a href="{{ url_for('index') }}">overview</a>
   {% if g.user %}
-  <li><a href="{{ url_for('edit_profile') }}">profile</a>
-  <li><a href="{{ url_for('logout') }}">sign out [{{ g.user._name }}]</a>
+    <li><a href="{{ url_for('edit_profile') }}">profile</a>
+    <li><a href="{{ url_for('logout') }}">sign out [{{ g.user._name }}]</a>
+    <li><a href="{{ url_for('chat') }}">chat</a>
+    {% if g.user._type == 0 %}
+      <li>You are seeing this because you are Watcher. <br>
+    {% endif %}
+    {% if g.user._type == 1 %}
+      <li>You are seeing this because you are Tourist. <br>
+    {% endif %}
+    {% if g.user._type == 2 %}
+      <li>You are seeing this because you are Crew. <br>
+    {% endif %}
   {% else %}
-  <li><a href="{{ url_for('login') }}">sign in</a>
+    <li><a href="{{ url_for('login') }}">sign in</a>
   {% endif %}
 </ul>
 {% for message in get_flashed_messages() %}

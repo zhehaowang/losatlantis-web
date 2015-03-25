@@ -13,6 +13,8 @@ from cassandra.query import SimpleStatement
 
 from email.utils import parseaddr
 
+import xmpp
+
 # setup flask
 app = Flask(__name__)
 app.config.update(
@@ -21,9 +23,70 @@ app.config.update(
     
     # Database configuration
     DATABASE_URI = 'localhost',
-    KEYSPACE_NAME = 'losatlantis'
+    KEYSPACE_NAME = 'losatlantis',
+    
+    # Jabber host configuration
+    JABBER_HOST = 'archive-dev.remap.ucla.edu'
 )
 
+# setup flask-openid
+oid = OpenID(app, safe_roots=[], extension_responses=[pape.Response])
+
+# setup Cassandra database connection
+cluster = Cluster(
+    contact_points = [app.config['DATABASE_URI']],
+)
+
+db_session = cluster.connect(app.config['KEYSPACE_NAME'])
+
+# jabber user registration function: Right now second registration always fails...
+def register_jabber_user(username, host, passwd, nickname):
+    jid = xmpp.protocol.JID(username + '@' + host)
+    cli = xmpp.Client(jid.getDomain(), debug=[])
+    cli.connect()
+
+    # getRegInfo has a bug that puts the username as a direct child of the
+    # IQ, instead of inside the query element.  The below will work, but
+    # won't return an error when the user is known, however the register
+    # call will return the error.
+    xmpp.features.getRegInfo(cli, jid.getDomain(),
+                             #{'username':jid.getNode()},
+                             sync=True)
+    # TODO: check if name field works as intended as nicknames
+    if xmpp.features.register(cli, jid.getDomain(),
+                              {'username':jid.getNode(),
+                               'password':passwd,
+                               'name':nickname}):
+        if __debug__:
+            print('Jabber user registration successful')
+    else:
+        print('Jabber user registration failed: ' + jid.getNode() + ' ' + passwd + ' ' + nickname)
+    return
+      
+# jabber user unregistration function, used by edit_profile
+def unregister_jabber_user(username, host, passwd):
+    jid = xmpp.protocol.JID(username + '@' + host)
+    cli = xmpp.Client(jid.getDomain(), debug=[])
+    cli.connect()
+    
+    # in unregistration, disp(client) must be authorized
+    cli.auth(jid.getNode(), passwd)
+    
+    # getRegInfo has a bug that puts the username as a direct child of the
+    # IQ, instead of inside the query element.  The below will work, but
+    # won't return an error when the user is known, however the register
+    # call will return the error.
+    xmpp.features.getRegInfo(cli, jid.getDomain(),
+                             #{'username':jid.getNode()},
+                             sync=True)
+    
+    if xmpp.features.unregister(cli, jid.getDomain()):
+        if __debug__:
+            print('Jabber user unregistration successful')
+    else:
+        print('Jabber user unregistration failed')
+    return
+    
 # Right now we are not using a Model mapping tool, such as sqlalchemy or cqlengine
 class Users(object):
     
@@ -62,14 +125,8 @@ class Users(object):
         self._openid = openid
         self._type = type
 
-# setup flask-openid
-oid = OpenID(app, safe_roots=[], extension_responses=[pape.Response])
 
-cluster = Cluster(
-    contact_points = [app.config['DATABASE_URI']],
-)
-
-db_session = cluster.connect(app.config['KEYSPACE_NAME'])
+# Web server code
 
 @app.before_request
 def before_request():
@@ -176,8 +233,13 @@ def register():
         flash(u'Illegal email address')
         return redirect(url_for('login'))
         
-    if (passwd != passwd_confirm):
+    if passwd != passwd_confirm:
         flash(u'Password mismatch')
+        return redirect(url_for('login'))
+        
+    # Note: Remove these if user name's voluntary
+    if user_name is None or user_name == '':
+        flash(u'Please provide your user name')
         return redirect(url_for('login'))
         
     results = db_session.execute('select * from users where email = \'%s\'' % email)
@@ -199,6 +261,8 @@ def register():
         # This email address does not have related records, we create a new profile
         flash(u'Profile successfully created, you can now login')
         db_session.execute('insert into users (user_name, email, password, type) values (\'%s\', \'%s\', \'%s\', %d)' % (user_name, email, passwd, type))
+        # When we create a new profile, we also create a jabber account; JID: email, pwd: email, nickname: user_name
+        register_jabber_user(email.replace('@', '.'), app.config['JABBER_HOST'], email, user_name)
         return redirect(url_for('login'))
     return redirect(url_for('login'))
 
@@ -238,23 +302,28 @@ def create_profile():
     if (not g.user is None) or 'openid' not in session:
         return redirect(url_for('index'))
     if request.method == 'POST':
-        name = request.form['name']
+        user_name = request.form['name']
         email = request.form['email']
         type = int(request.form['type'])
         
-        if not name:
-            flash(u'Error: you have to provide a name')
+        # Note: Remove 'user_name' condition if user name's voluntary
+        if not user_name:
+            flash(u'Please provide a user name')
         elif '@' not in email:
             flash(u'Error: you have to enter a valid email address')
         else:
             flash(u'Profile successfully created')
-            db_session.execute('insert into users (user_name, email, type) values (\'%s\', \'%s\', %d)' % (name, email, type))
+            db_session.execute('insert into users (user_name, email, type) values (\'%s\', \'%s\', %d)' % (user_name, email, type))
             # It's not necessary that we store openID now, but we do so anyway.
             db_session.execute('update users set openid = openid + [\'%s\'] where email = \'%s\'' % (session['openid'], email))
+            # When we create a new profile, we also create a jabber account; JID: email, pwd: email, nickname: user_name
+            register_jabber_user(email.replace('@', '.'), app.config['JABBER_HOST'], email, user_name)
             return redirect(oid.get_next_url())
     return render_template('create_profile.html', next_url=oid.get_next_url())
 
 # Update the profile; we do not allow people to update their email address?
+# Note: the function name "edit_profile" actually matters, 
+# since it's valid to use url_for('edit_profile') to refer to this function, instead of edit_profile.html
 @app.route('/profile', methods=['GET', 'POST'])
 def edit_profile():
     if g.user is None:
@@ -267,6 +336,7 @@ def edit_profile():
             
             session['openid'] = None
             session['email'] = None
+            unregister_jabber_user(request.form['email'].replace('@', '.'), app.config['JABBER_HOST'], request.form['email'])
             
             flash(u'Profile deleted')
             return redirect(url_for('index'))
@@ -279,8 +349,14 @@ def edit_profile():
             flash(u'Profile successfully updated')
             # Note: Two entries with the same email address: maybe email should be primary key?
             db_session.execute('update users set user_name = \'%s\', type = %d where email = \'%s\'' % (form['name'], form['type'], g.user._email))
+            
+            # Note: when updating user name, we recreate the jabber account, 
+            # which may not be the ideal action since all your previous records are lost
+            # Using this now since I didn't find docs on changing the 'name' in xmpppy
+            unregister_jabber_user(form['email'].replace('@', '.'), app.config['JABBER_HOST'], form['email'])
+            register_jabber_user(form['email'].replace('@', '.'), app.config['JABBER_HOST'], form['email'], form['name'])
+            
             g.user._name = form['name']
-            g.user._email = form['email']
             g.user._type = form['type']
             return redirect(url_for('edit_profile'))
     return render_template('edit_profile.html', form=form)
@@ -295,6 +371,12 @@ def logout():
     # Note: logout will want a constant redirect to something like index.html, which may not be ideal in certain cases?
     return redirect(url_for('index'))
 
+@app.route('/chat')
+def chat():
+    # We have a check in frontend for user session, so the following part is commented
+    # if g.user is None:
+    #     abort(401)
+    return render_template('chat.html')
 
 if __name__ == '__main__':
     app.run()

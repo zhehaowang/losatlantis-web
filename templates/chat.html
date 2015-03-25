@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h2>Overview</h2>
+  {% if g.user %}
+    <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-1.2.6.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/strophe.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    
+    <script type="text/javascript">
+      var host = 'archive-dev.remap.ucla.edu';
+      var bosh = 'http://' + host + ':5280/http-bind';
+      var connection = null;
+
+      // Jabber user name and password trick
+      window.onload = function () {
+        connection = new Strophe.Connection(bosh);
+        
+        var email = '{{ g.user._email }}';
+        var jid = String(email).replace('@', '.') + '@' + host;
+        
+        // Jabber password is user's email account for now.
+        chatConnect(jid, email);
+      }
+    </script>
+    
+    <p>Hello {{ g.user._name }}!
+    <button type="button" onclick="sendMsg('zhehao.mail.gmail.com@archive-dev.remap.ucla.edu', 'chat')">Click Me!</button>
+  {% else %}
+    <p>Please <a href="{{ url_for('login') }}">sign in</a> your account to chat!
+  {% endif %}
+{% endblock %}

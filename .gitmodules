@@ -1,3 +1,6 @@
 [submodule "contrib/strophejs"]
 	path = contrib/strophejs
 	url = https://github.com/strophe/strophejs
+[submodule "contrib/strophejs-plugins"]
+	path = contrib/strophejs-plugins
+	url = https://github.com/strophe/strophejs-plugins

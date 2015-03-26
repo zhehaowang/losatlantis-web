@@ -1,0 +1,1 @@
+../../contrib/strophejs-plugins/muc/strophe.muc.js

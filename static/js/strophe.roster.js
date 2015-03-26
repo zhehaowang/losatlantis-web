@@ -1,0 +1,1 @@
+../../contrib/strophejs-plugins/roster/strophe.roster.js

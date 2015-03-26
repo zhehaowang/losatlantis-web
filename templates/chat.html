@@ -3,7 +3,11 @@
   <h2>Overview</h2>
   {% if g.user %}
     <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-1.2.6.min.js') }}"></script>
+    
     <script type="text/javascript" src="{{ url_for('static', filename='js/strophe.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/strophe.muc.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/strophe.roster.js') }}"></script>
+    
     <script type="text/javascript" src="{{ url_for('static', filename='js/chat.js') }}"></script>
     
     <script type="text/javascript">
@@ -20,11 +24,54 @@
         
         // Jabber password is user's email account for now.
         chatConnect(jid, email);
+        
+        // Jabber actions differ by different types of identities
+        if ({{ g.user_type }} == 0) {
+          // for Watchers, they join a chatroom: 
+          // Note: this actually introduces the requirement of a globally unique user name, which is not ideal
+          connection.muc.join("room@conference.archive-dev.remap.ucla.edu", '{{ g.user._name }}', onMessage, onPresence, onRoster);
+        }
+        
+        if ({{ g.user_type }} == 1) {
+        
+        }
+        
+        if ({{ g.user_type }} == 2) {
+        
+        }
       }
     </script>
     
     <p>Hello {{ g.user._name }}!
-    <button type="button" onclick="sendMsg('zhehao.mail.gmail.com@archive-dev.remap.ucla.edu', 'chat')">Click Me!</button>
+    
+    <!--
+    <button type="button" onclick="sendMsg('room@conference.archive-dev.remap.ucla.edu', 'chat')">Click Me!</button>
+    -->
+    
+    <textarea id="chat_display">
+    </textarea>
+    
+    {% if g.user._type == 0 %}
+      
+    {% endif %}
+      
+    {% if g.user._type == 1 %}
+      
+    {% endif %}
+    
+    {% if g.user._type == 2 %}
+      <dl>
+        <dt>JID:
+        <dd><input type=text id="input_jid" name="input_jid" size=30 value="@archive-dev.remap.ucla.edu">
+        <dt>Message:
+        <dd><input type=text id="input_msg" name="input_msg" size=30 value="">
+        <dt>Type:
+        <dd><input type=text id="input_type" name="input_type" size=30 value="chat">
+      </dl>
+      <br>
+      <button id="input_send" onclick="sendClick()">Send</button>
+    {% endif %}
+    
   {% else %}
     <p>Please <a href="{{ url_for('login') }}">sign in</a> your account to chat!
   {% endif %}

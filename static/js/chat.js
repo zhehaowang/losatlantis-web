@@ -1,4 +1,5 @@
-// TODO: Figuring out what the number after the jid means
+// TODO: Figuring out what the number after the jid means.
+// TODO: Groupchat msgs are usually sent twice; figuring out why.
 
 function onConnect(status)
 {
@@ -28,14 +29,15 @@ function onConnect(status)
         if (userType == 0) {
           // for Watchers, they join a chatroom: 
           // Note: this actually introduces the requirement of a globally unique user name, which is not ideal
-          connection.muc.join("room@conference.archive-dev.remap.ucla.edu", nickname, onMessage, onPresence, onRoster);
+          // Note: we already have onMessage callback for all messages directed at this JID/chatroom
+          connection.muc.join(defaultChatroom, nickname, null, onPresence, onRoster);
         } else if (userType == 1) {
           // for Tourists, they receive messages directed at them:
           
         } else if (userType == 2) {
           // for Crew, they can send anything to anyone
           // Currently for crew to be able to push MUC message, they'll join the chatroom as well.
-          connection.muc.join("room@conference.archive-dev.remap.ucla.edu", nickname, onMessage, onPresence, onRoster);
+          
         }
     }
 }
@@ -74,6 +76,8 @@ function getRoster() {
 function onPresence(presence) {
     console.log("onPresence");
     console.log(presence);
+    
+    $('#chat_display').append('System: chatroom roster \"' + presence.getAttribute('from') + '\"\n');
 }
 
 function onRoster(roster) {
@@ -89,23 +93,21 @@ function onMessage(msg) {
     var type = msg.getAttribute('type');
     var fromNickname = msg.getAttribute('from_nickname');
     
-    console.log(to);
-    console.log(type);
-    console.log(from);
-    console.log(fromNickname);
-    
     if (fromNickname == null || fromNickname == undefined) {
         fromNickname = '';
     }
     
     var elems = msg.getElementsByTagName('body');
     
-    if ((type == "chat" || type == "groupchat") && elems.length > 0) {
+    if (elems.length > 0) {
         var body = elems[0];
-        
-        $('#chat_display').append(fromNickname + '(' + from + ')' + ' : ' + Strophe.getText(body) + '\n');
+        if ((type == "chat" || type == "groupchat")) {
+            $('#chat_display').append(fromNickname + '(' + from + ')' + ' : ' + Strophe.getText(body) + '\n');
+        } else if (type == "error") {
+            $('#chat_display').append('Error sending: \"' + Strophe.getText(body) + '\"\n');
+        }
     }
-
+    
     // we must return true to keep the handler alive.  
     // returning false would remove it after it finishes.
     return true;
@@ -116,6 +118,7 @@ function chatConnect(jid, passwd) {
 }
 
 // Interface interaction functions
+
 function sendClick() {
     var toJID = $('#input_jid').val();
     var type = $('#input_type').val();
@@ -125,4 +128,9 @@ function sendClick() {
     console.log(toJID);
     
     sendMsg(toJID, content, type, from_nickname);
+}
+
+function joinClick() {
+    var roomJID = $('#input_room_jid').val();
+    connection.muc.join(roomJID, nickname, null, onPresence, onRoster);
 }

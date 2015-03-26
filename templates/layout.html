@@ -1,8 +1,7 @@
 <!doctype html>
-<title>{% block title %}Welcome{% endblock %} | LosAtlantis Functions based on Flask OpenID Example</title>
-<link rel=stylesheet type=text/css href="{{ url_for('static',
-  filename='style.css') }}">
-<h1>LosAtlantis Functions based on Flask OpenID Example</h1>
+<title>{% block title %}Welcome{% endblock %} | LosAtlantis proof-of-concept site</title>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
+<h1>LosAtlantis proof-of-concept site</h1>
 <ul class=navigation>
   <li><a href="{{ url_for('index') }}">overview</a>
   {% if g.user %}
@@ -25,4 +24,5 @@
 {% for message in get_flashed_messages() %}
   <p class=message>{{ message }}
 {% endfor %}
+<hr>
 {% block body %}{% endblock %}

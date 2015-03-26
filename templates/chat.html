@@ -1,7 +1,8 @@
 {% extends "layout.html" %}
 {% block body %}
-  <h2>Overview</h2>
   {% if g.user %}
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/chat.css') }}">
+    
     <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-1.2.6.min.js') }}"></script>
     
     <script type="text/javascript" src="{{ url_for('static', filename='js/strophe.js') }}"></script>
@@ -13,12 +14,17 @@
     <script type="text/javascript">
       var host = 'archive-dev.remap.ucla.edu';
       var bosh = 'http://' + host + ':5280/http-bind';
+      var defaultChatroom = 'observatory@conference.archive-dev.remap.ucla.edu';
+      
       var connection = null;
       var userType = {{ g.user._type }};
       var nickname = '{{ g.user._name }}';
 
       // Jabber user name and password trick
       window.onload = function () {
+        // Page initialization
+        $('#input_room_jid').val(defaultChatroom);
+        
         connection = new Strophe.Connection(bosh);
         
         var email = '{{ g.user._email }}';
@@ -29,14 +35,15 @@
       }
     </script>
     
-    <p>Hello {{ g.user._name }}!
+    <div id="welcome_div">
+      <p>Hello {{ g.user._name }}!
+    </div>
     
-    <!--
-    <button type="button" onclick="sendMsg('room@conference.archive-dev.remap.ucla.edu', 'chat')">Click Me!</button>
-    -->
-    
-    <textarea id="chat_display">
-    </textarea>
+    <div id="chat_display_div" class="boxClass">
+      Chat messages:
+      <br>
+      <textarea id="chat_display"></textarea>
+    </div>
     
     {% if g.user._type == 0 %}
       
@@ -47,16 +54,27 @@
     {% endif %}
     
     {% if g.user._type == 2 %}
-      <dl>
-        <dt>JID:
-        <dd><input type=text id="input_jid" name="input_jid" size=30 value="@archive-dev.remap.ucla.edu">
-        <dt>Message:
-        <dd><input type=text id="input_msg" name="input_msg" size=30 value="">
-        <dt>Type:
-        <dd><input type=text id="input_type" name="input_type" size=30 value="chat">
-      </dl>
+      <div id="crew_control_div" class="boxClass">
+        Control section - send message:
+        <dl>
+          <dt>JID:
+          <dd><input type=text id="input_jid" name="input_jid" value="@archive-dev.remap.ucla.edu" size=40>
+          <dt>Message:
+          <dd><input type=text id="input_msg" name="input_msg" value="" size=40>
+          <dt>Type:
+          <dd><input type=text id="input_type" name="input_type" value="chat" size=40>
+        </dl>
+        <button id="input_send" onclick="sendClick()">Send</button>
+      </div>
+      <div id="crew_chatroom_div" class="boxClass">
+        Control section - join chatroom:
+        <dl>
+          <dt>Room JID:
+          <dd><input type="text" id="input_room_jid" name="input_room_jid" size=40>
+        </dl>
+        <button id="input_join_room" onclick="joinClick()">Join</button>
+      </div>
       <br>
-      <button id="input_send" onclick="sendClick()">Send</button>
     {% endif %}
     
   {% else %}

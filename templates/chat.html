@@ -14,6 +14,8 @@
       var host = 'archive-dev.remap.ucla.edu';
       var bosh = 'http://' + host + ':5280/http-bind';
       var connection = null;
+      var userType = {{ g.user._type }};
+      var nickname = '{{ g.user._name }}';
 
       // Jabber user name and password trick
       window.onload = function () {
@@ -24,21 +26,6 @@
         
         // Jabber password is user's email account for now.
         chatConnect(jid, email);
-        
-        // Jabber actions differ by different types of identities
-        if ({{ g.user_type }} == 0) {
-          // for Watchers, they join a chatroom: 
-          // Note: this actually introduces the requirement of a globally unique user name, which is not ideal
-          connection.muc.join("room@conference.archive-dev.remap.ucla.edu", '{{ g.user._name }}', onMessage, onPresence, onRoster);
-        }
-        
-        if ({{ g.user_type }} == 1) {
-        
-        }
-        
-        if ({{ g.user_type }} == 2) {
-        
-        }
       }
     </script>
     

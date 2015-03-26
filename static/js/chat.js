@@ -23,12 +23,21 @@ function onConnect(status)
         
         // An example of subscribing to another account
         //connection.send($pres({ to: "zhehao.mail.gmail.com@archive-dev.remap.ucla.edu", type: "subscribe" }));
+                
+        // Jabber actions differ by different types of identities
+        if (userType == 0) {
+          // for Watchers, they join a chatroom: 
+          // Note: this actually introduces the requirement of a globally unique user name, which is not ideal
+          connection.muc.join("room@conference.archive-dev.remap.ucla.edu", nickname, onMessage, onPresence, onRoster);
+        } else if (userType == 1) {
+          // for Tourists, they receive messages directed at them:
+          
+        } else if (userType == 2) {
+          // for Crew, they can send anything to anyone
+          // Currently for crew to be able to push MUC message, they'll join the chatroom as well.
+          connection.muc.join("room@conference.archive-dev.remap.ucla.edu", nickname, onMessage, onPresence, onRoster);
+        }
     }
-}
-
-function joinRoom(roomJID, nickname) {
-    // An example of joining a room
-    connection.muc.join("room@conference.archive-dev.remap.ucla.edu", "pu", onMessage, onPresence, onRoster);
 }
 
 function sendMsg(toJID, content, type, fromNickname) {
@@ -48,16 +57,16 @@ function sendMsg(toJID, content, type, fromNickname) {
 }
 
 function getRoster() {
-    // An example of getting roster
-    var iq = $iq({type: 'get'}).c('query', {xmlns: 'jabber:iq:roster'});
-    connection.sendIQ(iq, function(res) {
-      console.log(res);
-      
-      $(res).find('item').each(function(){
-        var jid = $(this).attr('jid');     
-        console.log(jid);
-      })
-    });
+   // An example of getting roster
+   var iq = $iq({type: 'get'}).c('query', {xmlns: 'jabber:iq:roster'});
+   connection.sendIQ(iq, function(res) {
+	 console.log(res);
+	 
+	 $(res).find('item').each(function(){
+	   var jid = $(this).attr('jid');     
+	   console.log(jid);
+	 })
+   });
 }
 
 // Handler functions
@@ -80,6 +89,11 @@ function onMessage(msg) {
     var type = msg.getAttribute('type');
     var fromNickname = msg.getAttribute('from_nickname');
     
+    console.log(to);
+    console.log(type);
+    console.log(from);
+    console.log(fromNickname);
+    
     if (fromNickname == null || fromNickname == undefined) {
         fromNickname = '';
     }
@@ -89,7 +103,7 @@ function onMessage(msg) {
     if ((type == "chat" || type == "groupchat") && elems.length > 0) {
         var body = elems[0];
         
-        $('#chat_display').val += fromNickname + '(' + from + ')' + ' : ' + Strophe.getText(body) + '\n';
+        $('#chat_display').append(fromNickname + '(' + from + ')' + ' : ' + Strophe.getText(body) + '\n');
     }
 
     // we must return true to keep the handler alive.  
@@ -103,6 +117,12 @@ function chatConnect(jid, passwd) {
 
 // Interface interaction functions
 function sendClick() {
-    var toJID = $('#input_jid').val;
+    var toJID = $('#input_jid').val();
+    var type = $('#input_type').val();
+    var content = $('#input_msg').val();
+    var from_nickname = nickname;
     
+    console.log(toJID);
+    
+    sendMsg(toJID, content, type, from_nickname);
 }

@@ -32,7 +32,13 @@
         
         // Jabber password is user's email account for now.
         chatConnect(jid, email);
-      }
+      };
+      
+      window.onbeforeunload = function () {
+        console.log("Page unload");
+        // Note: maybe better to handle chat login and logout onSignin and onSignout
+        chatDisconnect();
+      };
     </script>
     
     <div id="welcome_div">

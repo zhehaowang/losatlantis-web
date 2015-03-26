@@ -77,7 +77,7 @@ function onPresence(presence) {
     console.log("onPresence");
     console.log(presence);
     
-    $('#chat_display').append('System: chatroom roster \"' + presence.getAttribute('from') + '\"\n');
+    //$('#chat_display').append('System: chatroom roster \"' + presence.getAttribute('from') + '\"\n');
 }
 
 function onRoster(roster) {
@@ -115,6 +115,13 @@ function onMessage(msg) {
 
 function chatConnect(jid, passwd) {
     connection.connect(jid, passwd, onConnect);
+}
+
+function chatDisconnect() {
+    // Switch to using synchronous requests since this is typically called onUnload.
+    connection.options.sync = true; 
+    connection.flush();
+    connection.disconnect();
 }
 
 // Interface interaction functions

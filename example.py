@@ -221,7 +221,7 @@ def create_or_login_oidc():
         return redirect(url_for('index'))
     return redirect(url_for('create_profile'))
 
-app.route('/login_oidc', methods=['POST'])(oidc.check(create_or_login_oidc))
+app.route('/login_oidc', methods=['GET', 'POST'])(oidc.check(create_or_login_oidc))
 
 @app.route('/login_own', methods=['POST'])
 def login_own():

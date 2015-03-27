@@ -1,5 +1,5 @@
 // TODO: Figuring out what the number after the jid means.
-// TODO: Groupchat msgs are usually sent twice; figuring out why.
+// TODO: chatDisconnect onPageUnload's synchronous call on Strophe.Connection.disconnect seems to cause freeze when operating too fast
 
 function onConnect(status)
 {

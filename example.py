@@ -1,6 +1,8 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
+
 from flask import Flask, render_template, request, g, session, flash, \
      redirect, url_for, abort
 from flask.ext.openid import OpenID
@@ -377,6 +379,18 @@ def chat():
     # if g.user is None:
     #     abort(401)
     return render_template('chat.html')
+
+@app.route('/query', methods=['POST', 'GET'])
+def query():
+  if request.method == 'POST':
+    queryStr = request.form['query']
+    try:
+      result = json.dumps(db_session.execute(queryStr))
+      return result
+    except AttributeError:
+      return "AttributeError:", sys.exc_info()[0]
+    except:
+      return "Unexpected error:", sys.exc_info()[0]
 
 if __name__ == '__main__':
     app.run()

@@ -26,3 +26,23 @@ CREATE TABLE users (
   type int,
   PRIMARY KEY (email)
 );
+
+CREATE TABLE sunsets (
+  url text,
+  PRIMARY KEY (url)
+) WITH
+  bloom_filter_fp_chance=0.010000 AND
+  caching='{"keys":"ALL", "rows_per_partition":"NONE"}' AND
+  comment='test table for sunset videos' AND
+  dclocal_read_repair_chance=0.100000 AND
+  gc_grace_seconds=864000 AND
+  read_repair_chance=0.000000 AND
+  default_time_to_live=0 AND
+  speculative_retry='99.0PERCENTILE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'sstable_compression': 'LZ4Compressor'};
+
+ https://www.youtube.com/embed/pY54WU0C3i4
+ https://www.youtube.com/embed/kr7MDoWLQ14
+ https://www.youtube.com/embed/2od2GZg7-88

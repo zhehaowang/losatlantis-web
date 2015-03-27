@@ -4,7 +4,7 @@
 import sys
 
 from flask import Flask, render_template, request, g, session, flash, \
-     redirect, url_for, abort
+     redirect, url_for, abort, jsonify
 from flask.ext.openid import OpenID
 
 from openid.extensions import pape

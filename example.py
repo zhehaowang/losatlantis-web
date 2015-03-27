@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import json
 
 from flask import Flask, render_template, request, g, session, flash, \
      redirect, url_for, abort, jsonify

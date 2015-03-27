@@ -31,6 +31,17 @@ app.config.update(
     JABBER_HOST = 'archive-dev.remap.ucla.edu'
 )
 
+# Add cors headers for query passing
+def add_cors_headers(response):
+    # Allow any origin for the simple test 
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Methods'] = 'HEAD, GET, POST, PATCH, PUT, OPTIONS, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept'
+    return response
+
+app.after_request(add_cors_headers)
+
 # setup flask-openid
 oid = OpenID(app, safe_roots=[], extension_responses=[pape.Response])
 

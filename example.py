@@ -7,6 +7,7 @@ import json
 from flask import Flask, render_template, request, g, session, flash, \
      redirect, url_for, abort, jsonify
 from flask.ext.openid import OpenID
+from flask.ext.oidc import OpenIDConnect
 
 from openid.extensions import pape
 
@@ -17,6 +18,8 @@ from cassandra.query import SimpleStatement
 from email.utils import parseaddr
 
 import xmpp
+
+from pprint import pprint
 
 # setup flask
 app = Flask(__name__)
@@ -29,7 +32,11 @@ app.config.update(
     KEYSPACE_NAME = 'losatlantis',
     
     # Jabber host configuration
-    JABBER_HOST = 'archive-dev.remap.ucla.edu'
+    JABBER_HOST = 'archive-dev.remap.ucla.edu',
+    
+    # OpenID connect related parameters
+    OIDC_CLIENT_SECRETS = './client_secrets.json',
+    OIDC_ID_TOKEN_COOKIE_SECURE = False,
 )
 
 # Add cors headers for query passing
@@ -45,6 +52,11 @@ app.after_request(add_cors_headers)
 
 # setup flask-openid
 oid = OpenID(app, safe_roots=[], extension_responses=[pape.Response])
+
+# setup flask-oidc
+oidc_overrides = {
+}
+oidc = OpenIDConnect(app, **oidc_overrides)
 
 # setup Cassandra database connection
 cluster = Cluster(
@@ -182,23 +194,34 @@ def login_oid():
         return redirect(oid.get_next_url())
     if request.method == 'POST':
         openid = request.form.get('openid_identifier')
-        use_oidc = request.form.get('use_oidc_identifier')
         
-        if __debug__:
-            print('Received openid: ' + openid)
-            print('Received use_oidc: ' + use_oidc)
-            
         if openid:
             pape_req = pape.Request([])
-            if use_oidc != None and use_oidc != "1":
-                return oid.try_login(openid, ask_for=['email', 'nickname'],
+            return oid.try_login(openid, ask_for=['email', 'nickname'],
                                              ask_for_optional=['fullname'],
                                              extensions=[pape_req])
-            else:
-                print('OpenID Connect is not supported yet')
                 
     return render_template('login.html', next=oid.get_next_url(),
                            error=oid.fetch_error())
+
+def create_or_login_oidc():
+    id_token = oidc.get_cookie_id_token()
+    session['email'] = id_token['email']
+    # Temporarily using email account for session token
+    session['openid'] = id_token['email']
+    
+    results = db_session.execute('select * from users where email = \'%s\'' % id_token['email'])
+    if results is not None and len(results) > 0:
+        flash(u'Successfully signed in')
+        g.user = Users()
+        g.user.update(results[0])
+        # It's not necessary that we store openID now, but we do so anyway.
+        if (results[0].openid is not None and session['openid'] not in results[0].openid):
+            db_session.execute('update users set openid = openid + [\'%s\'] where email = \'%s\'' % (session['openid'], id_token['email']))
+        return redirect(url_for('index'))
+    return redirect(url_for('create_profile'))
+
+app.route('/login_oidc', methods=['POST'])(oidc.check(create_or_login_oidc))
 
 @app.route('/login_own', methods=['POST'])
 def login_own():
@@ -286,7 +309,7 @@ def register():
 # with a terrible URL which we certainly don't want.
 # This is only used by login with OpenID
 @oid.after_login
-def create_or_login(resp):
+def create_or_login_oid(resp):
     session['openid'] = resp.identity_url
     # Note: is there an OpenID account that is not identifiable by email?
     session['email'] = resp.email
@@ -308,7 +331,7 @@ def create_or_login(resp):
                             name=resp.fullname or resp.nickname,
                             email=resp.email))
 
-# If this is the user's first login, the create_or_login function
+# If this is the user's first login, the create_or_login_oid function
 # will redirect here so that the user can set up his profile.
 # Create profile is only usde by OpenID login now.
 @app.route('/create-profile', methods=['GET', 'POST'])

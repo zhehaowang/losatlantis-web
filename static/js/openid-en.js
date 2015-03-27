@@ -10,7 +10,7 @@ var providers_large = {
 		name : 'Google',
 		url : 'https://www.google.com/accounts/o8/id',
 		// TODO: We'll need to use oidc for Google specifically before May, 2015, which is not implemented yet
-		use_oidc : false
+		use_oidc : true
 	},
 	yahoo : {
 		name : 'Yahoo',

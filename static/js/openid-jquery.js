@@ -112,10 +112,8 @@ openid = {
 			if (!onload) {
 			    console.log("first");
 			    
-			    if (provider['use_oidc'] == true) {
-			        this.use_oidc = 1;
-				} else if (provider['use_oidc'] == false) {
-				    this.use_oidc = 0;
+			    if (provider['use_oidc'] === true) {
+			        $('#openid_form').attr('action', 'login_oidc');
 				}
 				
 				$('#openid_form').submit();
@@ -130,14 +128,9 @@ openid = {
 	 */
 	submit : function() {
 	    var url = openid.provider_url;
-		var use_oidc = openid.use_oidc;
-		console.log(url);
 		if (url) {
 			url = url.replace('{username}', $('#openid_username').val());
 			openid.setOpenIdUrl(url);
-		}
-		if (use_oidc != null && use_oidc != undefined) {
-		    openid.setUseOIDC(use_oidc);
 		}
 		if (openid.demo) {
 			alert(openid.demo_text + "\r\n" + document.getElementById(openid.input_id).value);
@@ -165,7 +158,7 @@ openid = {
 	
 	/**
 	 * @return {Void}
-	 */
+	 
 	setUseOIDC : function(use_oidc) {
 		var hidden = document.getElementById(this.use_oidc_id);
 		if (hidden != null) {
@@ -174,6 +167,7 @@ openid = {
 			$('#openid_form').append('<input type="hidden" id="' + this.use_oidc_id + '" name="' + this.use_oidc_id + '" value="' + use_oidc + '"/>');
 		}
 	},
+	*/
 	
 	/**
 	 * @return {Void}

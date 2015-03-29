@@ -102,7 +102,8 @@ function onMessage(msg) {
     if (elems.length > 0) {
         var body = elems[0];
         if ((type == "chat" || type == "groupchat")) {
-            $('#chat_display').append(fromNickname + '(' + from + ')' + ' : ' + Strophe.getText(body) + '\n');
+            $('#chat_display').append(fromNickname + ' : ' + Strophe.getText(body) + '\n');
+            //$('#chat_display').append(fromNickname + '(' + from + ')' + ' : ' + Strophe.getText(body) + '\n');
         } else if (type == "error") {
             $('#chat_display').append('Error sending: \"' + Strophe.getText(body) + '\"\n');
         }

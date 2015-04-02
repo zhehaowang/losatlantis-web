@@ -2,5 +2,11 @@
 {
     width:90%;
     height:90%;
-    font-size:x-large;
+    
+    font-size:xx-large;
+    font-weight: bold;
+    font-family: inherit;
+	
+    color: white; 
+    background-color: #666677;
 }

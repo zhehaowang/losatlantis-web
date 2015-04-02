@@ -81,7 +81,7 @@
         </dl>
         <button id="input_send" onclick="sendClick()">Send</button>
       </div>
-      <div id="crew_chatroom_div" class="boxClass">
+      <div id="crew_chatroom_div" class="boxClass" style="float:none">
         Control section - join chatroom:
         <dl>
           <dt>Room JID:
@@ -95,4 +95,5 @@
   {% else %}
     <p>Please <a href="{{ url_for('login') }}">sign in</a> your account to chat!
   {% endif %}
+{% include "navigation.html" %}
 {% endblock %}

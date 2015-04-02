@@ -1,0 +1,12 @@
+<div id="navigation_div">
+<ul class=navigation>
+  <li><a href="{{ url_for('index') }}">overview</a>
+  {% if g.user %}
+    <li><a href="{{ url_for('edit_profile') }}">profile</a>
+    <li><a href="{{ url_for('logout') }}">sign out [{{ g.user._name }}]</a>
+    <li><a href="{{ url_for('chat') }}">chat</a>
+  {% else %}
+    <li><a href="{{ url_for('login') }}">sign in</a>
+  {% endif %}
+</ul>
+</div>

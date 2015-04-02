@@ -42,7 +42,7 @@ input[type="submit"] {
     color: #335E79;
     border-color: #335E79;
 }
-
+  
 input[name="openid"] {
     background: url(openid.png) 4px no-repeat;
     padding-left: 24px;
@@ -72,6 +72,7 @@ h1, h2 {
 {
     width:90%;
     height:300px;
+    float:none;
 }
 
 .floatLeftBox

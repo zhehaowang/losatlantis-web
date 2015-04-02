@@ -1,26 +1,21 @@
 <!doctype html>
 <title>{% block title %}Welcome{% endblock %} | LosAtlantis proof-of-concept site</title>
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
-<h1>LosAtlantis proof-of-concept site</h1>
-<ul class=navigation>
-  <li><a href="{{ url_for('index') }}">overview</a>
+<h1>
   {% if g.user %}
-    <li><a href="{{ url_for('edit_profile') }}">profile</a>
-    <li><a href="{{ url_for('logout') }}">sign out [{{ g.user._name }}]</a>
-    <li><a href="{{ url_for('chat') }}">chat</a>
     {% if g.user._type == 0 %}
-      <li>You are seeing this because you are Watcher. <br>
+      The Observatory
     {% endif %}
     {% if g.user._type == 1 %}
-      <li>You are seeing this because you are Tourist. <br>
+      The Guide
     {% endif %}
     {% if g.user._type == 2 %}
-      <li>You are seeing this because you are Crew. <br>
+      LosAtlantis proof-of-concept site
     {% endif %}
   {% else %}
-    <li><a href="{{ url_for('login') }}">sign in</a>
+    LosAtlantis proof-of-concept site
   {% endif %}
-</ul>
+</h1>
 {% for message in get_flashed_messages() %}
   <p class=message>{{ message }}
 {% endfor %}

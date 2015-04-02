@@ -1,6 +1,8 @@
 {% extends "layout.html" %}
 {% block title %}Sign in{% endblock %}
 {% block body %}
+{% include "navigation.html" %}
+
   <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/openid.css') }}" />
   
   <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-1.2.6.min.js') }}"></script>

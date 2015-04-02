@@ -45,21 +45,30 @@
       <p>Hello {{ g.user._name }}!
     </div>
     
-    <div id="chat_display_div" class="boxClass">
-      Chat messages:
-      <br>
-      <textarea id="chat_display"></textarea>
-    </div>
+    
     
     {% if g.user._type == 0 %}
-      
+      <div id="chat_display_div" class="boxClass fullWidthChatBox">
+        Chat messages:
+        <br>
+        <textarea id="chat_display" readonly></textarea>
+      </div>
     {% endif %}
       
     {% if g.user._type == 1 %}
-      
+      <div id="chat_display_div" class="boxClass fullWidthChatBox">
+        Chat messages:
+        <br>
+        <textarea id="chat_display" readonly></textarea>
+      </div>
     {% endif %}
     
     {% if g.user._type == 2 %}
+      <div id="chat_display_div" class="boxClass">
+        Chat messages:
+        <br>
+        <textarea id="chat_display" readonly></textarea>
+      </div>
       <div id="crew_control_div" class="boxClass">
         Control section - send message:
         <dl>

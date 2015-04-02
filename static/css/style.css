@@ -68,6 +68,12 @@ h1, h2 {
     overflow:scroll;
 }
 
+.fullWidthChatBox
+{
+    width:90%;
+    height:300px;
+}
+
 .floatLeftBox
 {
     float:left;

@@ -99,15 +99,19 @@ function onMessage(msg) {
     
     var elems = msg.getElementsByTagName('body');
     
+    var chatDisplay = $('#chat_display');
+    
     if (elems.length > 0) {
         var body = elems[0];
         if ((type == "chat" || type == "groupchat")) {
-            $('#chat_display').append(fromNickname + ' : ' + Strophe.getText(body) + '\n');
+            chatDisplay.append(fromNickname + ' : ' + Strophe.getText(body) + '\n');
             //$('#chat_display').append(fromNickname + '(' + from + ')' + ' : ' + Strophe.getText(body) + '\n');
         } else if (type == "error") {
-            $('#chat_display').append('Error sending: \"' + Strophe.getText(body) + '\"\n');
+            chatDisplay.append('Error sending: \"' + Strophe.getText(body) + '\"\n');
         }
     }
+    
+    chatDisplay.scrollTop(chatDisplay[0].scrollHeight);
     
     // we must return true to keep the handler alive.  
     // returning false would remove it after it finishes.

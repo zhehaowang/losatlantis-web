@@ -8,7 +8,7 @@ body {
 }
 
 a {   /* Should there be a class identifier for this? */ 
-    color: #AAAABB;
+    color: #EEEEEE;
     text-decoration: underline;
 }
 
@@ -27,8 +27,11 @@ p.error {
 input {
     font-size: 16px;
     border: 1px solid black;
-    color: white;
+    color: #EEEEEE;
     padding: 2px;
+    font-family: inherit;
+    background-color: #444444;
+    border-color: #EEEEEE;
 }
 
 button {
@@ -36,17 +39,27 @@ button {
     border: 1px solid black;
     color: white;
     padding: 2px;
+    font-family: inherit;
 }
 
 input[type="submit"] {
-    background: #CADEEB;
     color: white;
-    border-color: #335E79;
+    background-color: #444444;
+    border-color: #EEEEEE;
+    font-family: inherit;
 }
   
 input[name="openid"] {
     background: url(openid.png) 4px no-repeat;
     padding-left: 24px;
+    font-family: inherit;
+}
+
+select {
+    color: white;
+    background-color: #444444;
+    border-color: #EEEEEE;
+    font-family: inherit;
 }
 
 h1, h2 {

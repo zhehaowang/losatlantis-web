@@ -16,7 +16,7 @@ The proof-of-concept site is now online [here](http://archive-dev.remap.ucla.edu
   * Watchers (such as "watcher@watcher" account) join a chatroom "observatory@conference.archive-dev.remap.ucla.edu" by default, and received messages are displayed in the textarea.
   * Tourists (such as "tourist@tourist") receive messages directed at "email(replace '@' with '.')@archive-dev.remap.ucla.edu" (such as tourist.tourist@archive-dev.remap.ucla.edu)
   * Crews (such as "admin@admin") have additional boxes for sending texts to any chatroom or user; For groupchat, please try with type "groupchat", and join the intended chatroom (which looks like "XXX@conference.archive-dev.remap.ucla.edu") before sending the message; For chatting to a certain user, please put the user's account (which looks like "XXX@archive-dev.remap.ucla.edu").
-5. Alternatively, the active script has basic web components to test "chat": they are underlined and marked by colored text, and can be located by searching for "observatory:" or "The guide:"; upon clicking, the observatory component sends a "hello" message to the observatory chatroom that the watchers are in; while the guide component sends a "hello, [user name]" to every registered user.
+5. Alternatively, [the active script](http://archive-dev.remap.ucla.edu/static/fountainhead/html-test/sample.html) has basic web components to test "chat": they are underlined and marked by colored text, and can be located by searching for "observatory:" or "The guide:"; upon clicking, the observatory component sends a "hello" message to the observatory chatroom that the watchers are in; while the guide component sends a "hello, [user name]" to every registered user.
 
 ## Python Package Dependencies
 

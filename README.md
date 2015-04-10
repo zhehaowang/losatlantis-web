@@ -26,8 +26,9 @@ The proof-of-concept site is now online [here](http://archive-dev.remap.ucla.edu
 * Cassandra-driver (which requires six >= 1.6, an installation of another version of six in another directory may mess up)
 * xmpppy
 
-# Ejabberd setup configuration
+## Ejabberd setup configuration
 
 * Enable Ejabberd's http-bind
 * Allow in-band registration
 * May want to set registration limitation on the same IP address to infinity
+* Set mod_muc history size to 0 so that people don't see anything when they rejoin the observatory

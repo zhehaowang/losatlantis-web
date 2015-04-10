@@ -40,11 +40,8 @@
         chatDisconnect();
       };
     </script>
-    <!--
-    <div id="welcome_div">
-      <p>Hello {{ g.user._name }}!
-    </div>
-    -->
+    
+    <!-- Watchers -->
     {% if g.user._type == 0 %}
       <div id="chat_display_div" class="boxClass fullWidthChatBox">
         Chat messages:
@@ -52,7 +49,8 @@
         <textarea id="chat_display" readonly></textarea>
       </div>
     {% endif %}
-      
+    
+    <!-- Tourists -->
     {% if g.user._type == 1 %}
       <div id="chat_display_div" class="boxClass fullWidthChatBox">
         Chat messages:

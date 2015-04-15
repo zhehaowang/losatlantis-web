@@ -35,7 +35,7 @@ app.config.update(
     JABBER_HOST = 'archive-dev.remap.ucla.edu',
     
     # OpenID connect related parameters
-    OIDC_CLIENT_SECRETS = './client_secrets.json',
+    OIDC_CLIENT_SECRETS = app.root_path + '/client_secrets.json',
     OIDC_ID_TOKEN_COOKIE_SECURE = False,
 )
 
@@ -428,4 +428,4 @@ def query():
       return "Unexpected error:", sys.exc_info()[0]
 
 if __name__ == '__main__':
-    app.run(port = 5004, host = '0.0.0.0', debug = True)
+    app.run()

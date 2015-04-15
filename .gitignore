@@ -3,4 +3,5 @@ debug/
 *.pyc
 *.pyo
 images*/
+*.*~
 .DS_Store

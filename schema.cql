@@ -73,6 +73,7 @@ CREATE TABLE show (
  *
  * Question: 
  * 1. make sense for media to contain uploaded_time timestamp?
+ * 2. uploaded_by should be filled only by 
  *
  * Test:
  * 1. Tags querying (performance for set operation)?
@@ -82,8 +83,16 @@ CREATE TABLE media (
   key             text,
   tags            set<text>,
   approved        boolean,
+  private         boolean,
   uploaded_by     text,
-  in_show         set<int>
+  in_show         set<int>,
+  
+  categoryid      text,
+  description     text,
+  duration        text,
+  title           text,
+  
+  PRIMARY KEY (key)
 );
 
 /**
